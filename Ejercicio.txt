@@ -1,0 +1,158 @@
+Ejercicio - Java Spring Webflux
+---------------------------------
+
+Microservicio de Conversión de Costos de Vehículo a Criptomoneda con Spring WebFlux
+
+Descripción General
+--------------------
+Desarrollo de una API RESTful que permita convertir el precio de distintos modelos de vehículos, expresado en dólares, a su equivalente en distintas criptomonedas.
+
+Los requerimientos funcionales y técnicos se presentan a continuación.
+
+El ejercicio se debe realizar con programación funcional y Spring Webflux, en caso de no usar esta definición no se tomará en cuenta el ejercicio para la evaluación.
+
+Herramientas
+• Deberás utilizar Java 17, SpringBoot, Spring WebFlux para el desarrollo del microservicio.
+
+Requerimientos
+-----------------
+R1 API de Conversión: Proporcionará una lista de versiones para un modelo específico de vehículo, mostrando el nombre de la versión, el año del vehículo y su precio tanto en dólares como en la criptomoneda seleccionada. Las criptomonedas admitidas para la conversión son Bitcoin (BTC) y Ethereum (ETH). Persistir la cotización.
+
+R1.1 Implemente un control de fallo, para que en caso de que el API principal no se encuentre disponible, el API secundario sea utilizado. En caso de que el cliente especifique otra criptomoneda no soportada, se debe mostrar un mensaje de error.
+
+APIs a consumir:
+
+Vehículos
+------------
+ALL NEW ACCENT -> https://kerner.hyundai.com.ec/api/versiones/ 1/1036
+ALL NEW TUCSON -> https://kerner.hyundai.com.ec/api/versiones/ 1/1031
+SANTA FE -> https://kerner.hyundai.com.ec/api/versiones/1/1023
+GRAND i10 -> https://kerner.hyundai.com.ec/api/versiones/1/1038
+Cotización de criptomoneda
+
+BTC
+-----
+Principal https://hZp-api.livecoinwatch.com/coins/BTC/about?currency=USD
+El valor de la cotización se encuentra en data.lastPrice (precio de 1 bitcoin en dólares)
+Secundaria https://api.coinlore.net/api/;cker/?id=90
+El valor de cotización se encuentra en price_usd (precio de 1 bitcoin en dólares)
+
+ETH
+------
+Principal https://hZp-api.livecoinwatch.com/coins/ETH/about?currency=USD
+El valor de la cotización se encuentra en data.lastPrice (precio de 1 bitcoin en dólares)
+Secundaria https://api.coinlore.net/api/;cker/?id=80
+El valor de cotización se encuentra en price_usd (precio de 1 bitcoin en dólares)
+
+Ejemplo API conversión
+---------------------------
+
+API de conversión
+
+Entrada
+{  
+  "data": {  
+    "model": "TUCSON",  
+    "cryptocurrency": "BTC"  
+  }  
+} 
+
+
+
+Salida
+{ 
+  "data": { 
+    "convertionId": "xxx-xxx-xxx-xxxx", // id generado
+    "conversionTimelife": "20 seconds", // tiempo restante que se mantiene el precio de la conversión para perfil senior, usted define el tiempo
+    "versions": [ 
+      { 
+        "model": "TUCSON", // dato de API vehículos
+        "version": "TUCSON TL", // dato de API vehículos
+        "priceUsd": 35000.0, // dato de API vehículos
+        "priceCryptocurrency": 1.6, // valor precio vehículo / valor cripto
+        "cryptocurrency": "BTC" // criptomoneda con la que se cotizó
+      },
+      { 
+        "model": "TUCSON",  
+        "version": "TUCSON SJ", 
+        "priceUsd": 25000.0, 
+        "priceCryptocurrency": 1, 
+        "cryptocurrency": "BTC" 
+      } 
+    ] 
+  } 
+}
+
+R2 API de Compra: Permitirá la realización de una compra utilizando la conversión de criptomoneda generada. La información de la compra (la conversión, el nombre del cliente y la fecha de compra) se almacenará de manera persistente tal como se especifica en los requerimientos R5.
+
+Ejemplo API Compra
+--------------------
+Entrada
+{ 
+  "data": { 
+    "convertionId": "xxx-xxx-xxx-xxxx", // en caso de que la conversión esté en caché tomar esa y no volver a generarla, validación para senior
+    "fullName": "Juan Perez", 
+    "version": "TUCSON TL", 
+    "model": "TUCSON", 
+    "cryptocurrency": "BTC" 
+  } 
+} 
+Salida
+{ 
+  "data": { 
+    "fullName": "Juan Perez", 
+    "version": "TUCSON TL", 
+    "model": "TUCSON", 
+    "cryptocurrency": "BTC", 
+    "priceUsd": 25000.0, 
+    "priceCryptocurrency": 1, 
+    "date": "2023-06-02:12:01:45", 
+    "purchaseId": "yyy-yyy-yyy-yyy" 
+  } 
+}
+
+R3 API de Reporte: Generará un reporte en formato JSON que mostrará el total de ventas diarias de un modelo o versión específica de vehículo, en dólares y en la criptomoneda seleccionada.
+
+Ejemplo API Reporte
+--------------------
+Entrada
+{ 
+  "data": { 
+    "date": "2023-06-02", 
+    "model": "TUCSON", 
+    "cryptocurrency": "BTC" 
+  } 
+}
+
+Salida
+{ 
+  "data": [{ 
+    "date": "2023-06-02", 
+    "model": "TUCSON", 
+    "cryptocurrency": "BTC", 
+    "usdAmount": 245000, 
+    "cryptocurrencyAmount": 5 
+  }] 
+}
+
+
+
+Requerimientos Técnicos
+--------------------------
+R4 Caché de Información: Implementar un sistema de caché para los datos de precio en tiempo real de las criptomonedas y la lista de versiones de un modelo específico de vehículo.
+
+R5 Almacenamiento Persistente: Las compras realizadas se deben almacenar de forma persistente en una base de datos PostgreSQL, a ser implementada desde un archivo docker compose.
+
+R6 Manejo de Errores: Implementar un manejo de errores, que devuelva un código de estado HTTP apropiado y un mensaje de error si algo sale mal.
+
+R7 Entradas y Salidas: Cada API tendrá entradas y salidas definidas, las cuales deben cumplirse en su totalidad.
+
+Requerimientos no funcionales
+
+R8 Arquitectura de Software: Diseñar la arquitectura del software teniendo en cuenta la modularidad, escalabilidad y los principios adecuados de arquitectura y diseño de software procurando utilizar arquitectura hexagonal para la construcción del microservicio.
+
+R9 Implementar pruebas unitarias (JUNIT 5)
+
+R10 Implementar pruebas de integración.
+
+R11 Contenerización de los microservicios.
