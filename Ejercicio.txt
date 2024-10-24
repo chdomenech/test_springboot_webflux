@@ -24,22 +24,22 @@ APIs a consumir:
 
 Vehículos
 ------------
-ALL NEW ACCENT -> https://kerner.hyundai.com.ec/api/versiones/ 1/1036
-ALL NEW TUCSON -> https://kerner.hyundai.com.ec/api/versiones/ 1/1031
-SANTA FE -> https://kerner.hyundai.com.ec/api/versiones/1/1023
-GRAND i10 -> https://kerner.hyundai.com.ec/api/versiones/1/1038
+ALL NEW ACCENT -> https://api-force-sales-75bf4126020f.herokuapp.com/api/versiones/1/1036
+ALL NEW TUCSON -> https://api-force-sales-75bf4126020f.herokuapp.com/api/versiones/1/1031
+SANTA FE -> https://api-force-sales-75bf4126020f.herokuapp.com/api/versiones/1/1023
+GRAND i10 -> https://api-force-sales-75bf4126020f.herokuapp.com/api/versiones/1/1038
 Cotización de criptomoneda
 
 BTC
 -----
-Principal https://hZp-api.livecoinwatch.com/coins/BTC/about?currency=USD
+Principal https://http-api.livecoinwatch.com/coins/BTC/about?currency=USD
 El valor de la cotización se encuentra en data.lastPrice (precio de 1 bitcoin en dólares)
 Secundaria https://api.coinlore.net/api/;cker/?id=90
 El valor de cotización se encuentra en price_usd (precio de 1 bitcoin en dólares)
 
 ETH
 ------
-Principal https://hZp-api.livecoinwatch.com/coins/ETH/about?currency=USD
+Principal https://http-api.livecoinwatch.com/coins/ETH/about?currency=USD
 El valor de la cotización se encuentra en data.lastPrice (precio de 1 bitcoin en dólares)
 Secundaria https://api.coinlore.net/api/;cker/?id=80
 El valor de cotización se encuentra en price_usd (precio de 1 bitcoin en dólares)

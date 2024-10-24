@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.nttdata.costoconversion.application.input.purchase.InputPurchaseVO;
@@ -27,24 +28,55 @@ public class PurchaseServiceImplementation implements PurchaseService {
 
 	@Autowired
 	private ConversionRepository conversionRepository;
+	
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
 
 	@Override
 	public PurchaseOutputVO savePurchase(InputPurchaseVO data) throws Exception {
 		ConversionEntity conversion = null;
 		VersionsEntity versionEntity = null;
 		PurchasesEntity purchaseEntity = null;
+		List<ConversionEntity> conversions = null;
+		List<VersionsEntity> versions  = null;
+		
+		ConversionEntity dataConversion = (ConversionEntity) redisTemplate.opsForValue().get(data.getData().getConvertionId());
+		if (dataConversion != null) {
+		    versions = (List<VersionsEntity>) redisTemplate.opsForValue().get(dataConversion.getId().toString());
 
-		List<ConversionEntity> conversions = conversionRepository.findByConversionIdAndModelAndCryptoCurrency(
-				data.getData().getConvertionId(), data.getData().getModel(), data.getData().getCryptocurrency());
+		    if (versions != null && !versions.isEmpty()) {
+		        Optional<VersionsEntity> opcionalVersion = versions.stream()
+		            .filter(version -> version.getVersion().equals(data.getData().getVersion()))
+		            .findFirst();
 
-		if (conversions.isEmpty()) {
-			throw new Exception(ERROR_CONVERSION_NOT_FOUND);
+		        if (opcionalVersion.isPresent()) {
+		            versionEntity = opcionalVersion.get();
+		        }
+		    }
+		    
+		    conversion = dataConversion;
+
+		} else {
+		    conversions = conversionRepository.findByConversionIdAndModelAndCryptoCurrency(
+		            data.getData().getConvertionId(), data.getData().getModel(), data.getData().getCryptocurrency());
+
+		    if (conversions.isEmpty()) {
+		        throw new Exception(ERROR_CONVERSION_NOT_FOUND);
+		    }
+
+		    conversion = conversions.get(0);
+
+		    // Si la conversión tiene versiones, filtrar la versión solicitada
+		    Optional<VersionsEntity> opcionalVersion = conversion.getVersions().stream()
+		        .filter(version -> version.getVersion().equals(data.getData().getVersion()))
+		        .findFirst();
+
+		    if (opcionalVersion.isPresent()) {
+		        versionEntity = opcionalVersion.get();
+		    } else {
+		        throw new Exception("Versión no encontrada.");
+		    }		    
 		}
-		conversion = conversions.get(0);
-
-		Optional<VersionsEntity> opcionalVersion = conversion.getVersions().stream()
-				.filter(version -> version.getVersion().equals(data.getData().getVersion())).findFirst();
-		versionEntity = opcionalVersion.get();
 
 		purchaseEntity = new PurchasesEntity();
 		purchaseEntity.setConversion(conversion);

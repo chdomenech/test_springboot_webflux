@@ -1,5 +1,6 @@
 package com.nttdata.costoconversion.application.output;
 
+
 import org.springframework.http.HttpStatus;
 
 import com.fasterxml.jackson.annotation.JsonInclude;

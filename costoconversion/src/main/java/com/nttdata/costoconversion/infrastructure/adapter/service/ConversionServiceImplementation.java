@@ -1,11 +1,13 @@
 package com.nttdata.costoconversion.infrastructure.adapter.service;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -28,14 +30,14 @@ public class ConversionServiceImplementation implements ConversionService {
     public static final String ERROR_MODEL_NOT_FOUND = "Modelo de auto no encontrado";
     public static final String ERROR_CRYPTO_NOT_FOUND = "Criptomoneda no encontrada";
     
-    private final static String URL_WS_ACCENT = "https://kerner.hyundai.com.ec/api/versiones/1/1036";
-    private final static String URL_WS_TUCSON = "https://kerner.hyundai.com.ec/api/versiones/1/1031";
-    private final static String URL_WS_SANTE_FE = "https://kerner.hyundai.com.ec/api/versiones/1/1023";
-    private final static String URL_WS_GRAND_I10 = "https://kerner.hyundai.com.ec/api/versiones/1/1038";
+    private final static String URL_WS_ACCENT = "https://api-force-sales-75bf4126020f.herokuapp.com/api/versiones/1/1036";
+    private final static String URL_WS_TUCSON = "https://api-force-sales-75bf4126020f.herokuapp.com/api/versiones/1/1031";
+    private final static String URL_WS_SANTE_FE = "https://api-force-sales-75bf4126020f.herokuapp.com/api/versiones/1/1023";
+    private final static String URL_WS_GRAND_I10 = "https://api-force-sales-75bf4126020f.herokuapp.com/api/versiones/1/1038";
 
-    private final static String URL_BTC_PRINCIPAL = "https://hZp-api.livecoinwatch.com/coins/BTC/about?currency=USD";
+    private final static String URL_BTC_PRINCIPAL = "https://http-api.livecoinwatch.com/coins/BTC/about?currency=USD";
     private final static String URL_BTC_SECONDARY = "https://api.coinlore.net/api/ticker/?id=90";
-    private final static String URL_ETH_PRINCIPAL = "https://hZp-api.livecoinwatch.com/coins/ETH/about?currency=USD";
+    private final static String URL_ETH_PRINCIPAL = "https://http-api.livecoinwatch.com/coins/ETH/about?currency=USD";
     private final static String URL_ETH_SECONDARY = "https://api.coinlore.net/api/ticker/?id=80";
 
     @Autowired
@@ -44,10 +46,20 @@ public class ConversionServiceImplementation implements ConversionService {
     @Autowired
     private VersionRepository versionRepository;
 
+    @Autowired
+    private RedisTemplate<String, Object> redisTemplate;
+
     @Override
     public ConvertionOutputVO createConversion(InputConversionVO data) throws Exception {
         String model = data.getData().getModel().toUpperCase();
         String cryptoCurrency = data.getData().getCryptocurrency().toUpperCase();
+        String cacheKey = model + "-" + cryptoCurrency;
+
+        // Check if the conversion data is available in the cache
+        ConvertionOutputVO cachedConversion = (ConvertionOutputVO) redisTemplate.opsForValue().get(cacheKey);
+        if (cachedConversion != null) {
+            return cachedConversion;
+        }
 
         List<CarInfoVO> carsModels = getModels(model);
         double cryptoPrice = getCryptoPrice(cryptoCurrency);
@@ -85,11 +97,17 @@ public class ConversionServiceImplementation implements ConversionService {
         conversion.setConversionTimelife(conversionEntity.getTimeLife());
         conversion.setConvertionId(conversionEntity.getConversionId());
         conversion.setVersions(models);
+        
+
+        // Cache the conversion data for future requests
+        redisTemplate.opsForValue().set(cacheKey, conversion, TIME_LIFE, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(conversionEntity.getConversionId(), conversionEntity, TIME_LIFE, TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(conversionEntity.getId().toString(), versions, TIME_LIFE, TimeUnit.MINUTES);
 
         return conversion;
     }
 
-    private List<CarInfoVO> getModels(String model) throws Exception {        
+    private List<CarInfoVO> getModels(String model) throws Exception {
         String urlServiceAuto = selectServiceModels(model);
         return WebClient.create(urlServiceAuto)
                         .get()
